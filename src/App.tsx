@@ -7,8 +7,8 @@ import './App.css';
 function App() {
   return (
     <Provider store={store}>
-      <ThemeProvider>
-        <div className="app-container">
+      <ThemeProvider defaultTheme="light">
+        <div style={{ backgroundColor: 'white', minHeight: '100vh' }}>
           <main className="main-content">
             <PDFChatPage />
           </main>
