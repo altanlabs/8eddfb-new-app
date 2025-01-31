@@ -1,275 +1,85 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { altan_db } from '../../utils/axios.ts';
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import type { RootState } from '../store';
 
-// Define interfaces for the state
-interface TableRecord {
-  id: string;
-  name: string;
-}
+// Table IDs from the database
+const DOCUMENTS_TABLE_ID = '28dcc0ef-1743-4937-b518-3ebc1ec11ed5';
+const CONVERSATIONS_TABLE_ID = '8d89eff1-ec76-49b2-834b-ec6affe07a8b';
+const MESSAGES_TABLE_ID = 'c78f3893-0684-4682-9aea-68a1cb26e141';
+const USERS_TABLE_ID = '3b64d0eb-d481-45f7-9b5d-5a18d6aa93cc';
 
-interface TableRecordItem {
-  id: string;
-  fields: Record<string, unknown>;
-}
-
-interface TableRecordData {
-  items: TableRecordItem[];
-  total: number;
-  lastUpdated: string;
-}
-
-interface LoadingState {
-  tables: 'idle' | 'loading';
-  records: 'idle' | 'loading';
-  schemas: 'idle' | 'loading';
-}
-
-interface TableState {
-  tables: {
-    byId: Record<string, TableRecord>;
-    byName: Record<string, string>;
-    allIds: string[];
-  };
-  schemas: {
-    byTableId: Record<string, unknown>;
-  };
-  records: {
-    byTableId: Record<string, TableRecordData>;
-  };
-  loading: LoadingState;
+interface TablesState {
+  activeDocument: string | null;
+  activeConversation: string | null;
+  documents: any[];
+  conversations: any[];
+  messages: any[];
+  loading: boolean;
   error: string | null;
 }
 
-// Query params interface
-interface QueryParams {
-  filters?: unknown[];
-  sort?: unknown[];
-  limit?: number;
-  pageToken?: string;
-  amount?: string
-}
-
-// Initial state structure
-const initialState: TableState = {
-  tables: {
-    byId: {},
-    byName: {},
-    allIds: [],
-  },
-  schemas: {
-    byTableId: {},
-  },
-  records: {
-    byTableId: {},
-  },
-  loading: {
-    tables: 'idle',
-    records: 'idle',
-    schemas: 'idle',
-  },
+const initialState: TablesState = {
+  activeDocument: null,
+  activeConversation: null,
+  documents: [],
+  conversations: [],
+  messages: [],
+  loading: false,
   error: null,
 };
 
-// INCLUDE YOUR TABLE NAMES AND IDS HERE
-const SAMPLE_TABLES: Record<string, string> = {
-  your_table: 'YOUR_TABLE_ID',
-  your_table2: 'YOUR_TABLE_ID2',
-};
-
-// Async Thunks
-export const fetchTableRecords = createAsyncThunk(
-  'tables/fetchRecords',
-  async ({ tableName, queryParams = {} }: { tableName: string; queryParams?: QueryParams }, { getState }) => {
-    const state = getState() as { tables: TableState };
-    const tableId = state.tables.tables.byName[tableName];
-    if (!tableId) throw new Error(`Table ${tableName} not found`);
-
-    const response = await altan_db.post(`/table/${tableId}/record/query`, {
-      filters: queryParams.filters || [],
-      sort: queryParams.sort || [],
-      limit: queryParams.limit || 100,
-      page_token: queryParams.pageToken,
-      amount: queryParams.amount || 'all'
-    });
-
-    return {
-      tableId,
-      records: response.data.records,
-      total: response.data.total,
-      nextPageToken: response.data.next_page_token,
-    };
-  }
-);
-
-export const createRecord = createAsyncThunk(
-  'tables/createRecord',
-  async ({ tableName, record }: { tableName: string; record: unknown }, { getState }) => {
-    const state = getState() as { tables: TableState };
-    const tableId = state.tables.tables.byName[tableName];
-    if (!tableId) throw new Error(`Table ${tableName} not found`);
-
-    const response = await altan_db.post(`/table/${tableId}/record`, {
-      records: [{ fields: record }],
-    });
-
-    return {
-      tableId,
-      record: response.data.records[0],
-    };
-  }
-);
-
-export const updateRecord = createAsyncThunk(
-  'tables/updateRecord',
-  async ({ tableName, recordId, updates }: { tableName: string; recordId: string; updates: unknown }, { getState }) => {
-    const state = getState() as { tables: TableState };
-    const tableId = state.tables.tables.byName[tableName];
-    if (!tableId) throw new Error(`Table ${tableName} not found`);
-
-    const response = await altan_db.patch(`/table/${tableId}/record/${recordId}`, {
-      fields: updates,
-    });
-
-    return {
-      tableId,
-      record: response.data.record,
-    };
-  }
-);
-
-export const deleteRecord = createAsyncThunk(
-  'tables/deleteRecord',
-  async ({ tableName, recordId }: { tableName: string; recordId: string }, { getState }) => {
-    const state = getState() as { tables: TableState };
-    const tableId = state.tables.tables.byName[tableName];
-    if (!tableId) throw new Error(`Table ${tableName} not found`);
-
-    await altan_db.delete(`/table/${tableId}/record/${recordId}`);
-
-    return {
-      tableId,
-      recordId,
-    };
-  }
-);
-
-export const fetchTableSchema = createAsyncThunk(
-  'tables/fetchSchema',
-  async ({ tableName }: { tableName: string }, { getState }) => {
-    const state = getState() as { tables: TableState };
-    const tableId = state.tables.tables.byName[tableName];
-    if (!tableId) throw new Error(`Table ${tableName} not found`);
-
-    const response = await altan_db.get(`/table/${tableId}`);
-    return {
-      tableId,
-      schema: response.data.table,
-    };
-  }
-);
-
-// Slice
-const tablesSlice = createSlice({
+export const tablesSlice = createSlice({
   name: 'tables',
   initialState,
   reducers: {
-    initializeTables: (state) => {
-      Object.entries(SAMPLE_TABLES).forEach(([name, id]) => {
-        state.tables.byId[id] = { id, name };
-        state.tables.byName[name] = id;
-        if (!state.tables.allIds.includes(id)) {
-          state.tables.allIds.push(id);
-        }
-      });
+    setActiveDocument: (state, action: PayloadAction<string | null>) => {
+      state.activeDocument = action.payload;
     },
-  },
-  extraReducers: (builder) => {
-    builder
-      .addCase(fetchTableRecords.pending, (state) => {
-        state.loading.records = 'loading';
-      })
-      .addCase(fetchTableRecords.fulfilled, (state, action) => {
-        const { tableId, records, total } = action.payload;
-        state.records.byTableId[tableId] = {
-          items: records,
-          total,
-          lastUpdated: new Date().toISOString(),
-        };
-        state.loading.records = 'idle';
-      })
-      .addCase(fetchTableRecords.rejected, (state, action) => {
-        state.loading.records = 'idle';
-        state.error = action.error.message || null;
-      })
-      .addCase(createRecord.fulfilled, (state, action) => {
-        const { tableId, record } = action.payload;
-        if (state.records.byTableId[tableId]?.items) {
-          state.records.byTableId[tableId].items.push(record);
-        }
-      })
-      .addCase(updateRecord.fulfilled, (state, action) => {
-        const { tableId, record } = action.payload;
-        if (state.records.byTableId[tableId]?.items) {
-          const index = state.records.byTableId[tableId].items.findIndex(
-            (r: TableRecordItem) => r.id === record.id
-          );
-          if (index !== -1) {
-            state.records.byTableId[tableId].items[index] = record;
-          }
-        }
-      })
-      .addCase(deleteRecord.fulfilled, (state, action) => {
-        const { tableId, recordId } = action.payload;
-        if (state.records.byTableId[tableId]?.items) {
-          state.records.byTableId[tableId].items = 
-            state.records.byTableId[tableId].items.filter(
-              (record: TableRecordItem) => record.id !== recordId
-            );
-        }
-      })
-      .addCase(fetchTableSchema.pending, (state) => {
-        state.loading.schemas = 'loading';
-      })
-      .addCase(fetchTableSchema.fulfilled, (state, action) => {
-        const { tableId, schema } = action.payload;
-        state.schemas.byTableId[tableId] = schema;
-        state.loading.schemas = 'idle';
-      })
-      .addCase(fetchTableSchema.rejected, (state, action) => {
-        state.loading.schemas = 'idle';
-        state.error = action.error.message || null;
-      });
+    setActiveConversation: (state, action: PayloadAction<string | null>) => {
+      state.activeConversation = action.payload;
+    },
+    setDocuments: (state, action: PayloadAction<any[]>) => {
+      state.documents = action.payload;
+    },
+    setConversations: (state, action: PayloadAction<any[]>) => {
+      state.conversations = action.payload;
+    },
+    setMessages: (state, action: PayloadAction<any[]>) => {
+      state.messages = action.payload;
+    },
+    setLoading: (state, action: PayloadAction<boolean>) => {
+      state.loading = action.payload;
+    },
+    setError: (state, action: PayloadAction<string | null>) => {
+      state.error = action.payload;
+    },
   },
 });
 
-// Actions
-export const { initializeTables } = tablesSlice.actions;
+export const {
+  setActiveDocument,
+  setActiveConversation,
+  setDocuments,
+  setConversations,
+  setMessages,
+  setLoading,
+  setError,
+} = tablesSlice.actions;
 
 // Selectors
-export const selectTablesState = (state: { tables: TableState }) => state.tables;
+export const selectActiveDocument = (state: RootState) => state.tables.activeDocument;
+export const selectActiveConversation = (state: RootState) => state.tables.activeConversation;
+export const selectDocuments = (state: RootState) => state.tables.documents;
+export const selectConversations = (state: RootState) => state.tables.conversations;
+export const selectMessages = (state: RootState) => state.tables.messages;
+export const selectLoading = (state: RootState) => state.tables.loading;
+export const selectError = (state: RootState) => state.tables.error;
 
-export const selectTableId = (state: { tables: TableState }, tableName: string) => 
-  selectTablesState(state)?.tables?.byName[tableName];
-
-export const selectTableRecords = (state: { tables: TableState }, tableName: string) => {
-  const tableId = selectTableId(state, tableName);
-  return tableId ? selectTablesState(state)?.records?.byTableId[tableId]?.items || [] : [];
+// Export table IDs
+export const tableIds = {
+  DOCUMENTS_TABLE_ID,
+  CONVERSATIONS_TABLE_ID,
+  MESSAGES_TABLE_ID,
+  USERS_TABLE_ID,
 };
-
-export const selectTableTotal = (state: { tables: TableState }, tableName: string) => {
-  const tableId = selectTableId(state, tableName);
-  return tableId ? selectTablesState(state)?.records?.byTableId[tableId]?.total || 0 : 0;
-};
-
-export const selectIsLoading = (state: { tables: TableState }) => 
-  selectTablesState(state)?.loading?.records === 'loading';
-
-export const selectTableSchema = (state: { tables: TableState }, tableName: string) => {
-  const tableId = selectTableId(state, tableName);
-  return tableId ? state.tables.schemas.byTableId[tableId] : null;
-};
-
-export const selectSchemaLoading = (state: { tables: TableState }) => 
-  state.tables.loading.schemas === 'loading';
 
 export default tablesSlice.reducer;

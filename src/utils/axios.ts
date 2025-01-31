@@ -1,35 +1,33 @@
-import axios, { AxiosInstance } from 'axios';
-import { addResponseInterceptor } from './interceptors.ts';
+import axios from 'axios';
 
-
-
-const API_BASE_URL = 'https://api.altan.ai/galaxia/hook/2o6RF5';
-
-// Create a custom instance of axios with specific configuration
-const altan_db: AxiosInstance = axios.create({
-  baseURL: API_BASE_URL,
+const instance = axios.create({
+  baseURL: 'https://api.altan.ai/galaxia/hook/0iZpTg',
+  headers: {
+    'Content-Type': 'application/json',
+  },
 });
 
-// Add Authentication later here
+// Add a request interceptor
+instance.interceptors.request.use(
+  (config) => {
+    // You can add auth token here if needed
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
 
+// Add a response interceptor
+instance.interceptors.response.use(
+  (response) => {
+    return response;
+  },
+  (error) => {
+    // Handle errors here
+    console.error('API Error:', error);
+    return Promise.reject(error);
+  }
+);
 
-// Add response interceptor
-addResponseInterceptor(altan_db);
-
-// Export constants and instances
-export {
-  API_BASE_URL,
-  altan_db,
-};
-
-// Type for the fetcher function arguments
-type FetcherArgs = string | [string, Record<string, unknown>];
-
-// Generic fetcher function with proper typing
-export const fetcher = async <T = unknown>(args: FetcherArgs): Promise<T> => {
-  const [url, config] = Array.isArray(args) ? args : [args, {}];
-  
-  const res = await altan_db.get(url, { ...config });
-  
-  return res.data;
-};
+export default instance;
