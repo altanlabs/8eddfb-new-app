@@ -1,9 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
 import { PDFViewer } from '@/components/blocks/pdf-viewer';
 import { pdfService } from '@/services/pdf.service';
@@ -83,16 +81,16 @@ export default function PDFChatPage() {
   };
 
   return (
-    <div className="container mx-auto p-4 max-w-7xl">
-      <h1 className="text-3xl font-bold mb-6">PDF Chat Assistant</h1>
+    <div className="bg-white text-black p-4">
+      <h1 className="text-3xl font-bold mb-6 text-black">PDF Chat Assistant</h1>
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* PDF Upload and View Section */}
         <div className="space-y-4">
-          <Card className="p-4">
-            <h2 className="text-xl font-semibold mb-4">Upload PDF</h2>
+          <div className="bg-white p-4 rounded-lg border border-gray-200">
+            <h2 className="text-xl font-semibold mb-4 text-black">Upload PDF</h2>
             <div className="space-y-4">
-              <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center">
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
                 <Input
                   type="file"
                   accept=".pdf"
@@ -103,11 +101,11 @@ export default function PDFChatPage() {
                 />
                 <label
                   htmlFor="pdf-upload"
-                  className="cursor-pointer text-sm text-gray-600 dark:text-gray-300"
+                  className="cursor-pointer text-sm text-gray-600"
                 >
                   <div className="flex flex-col items-center">
                     <svg
-                      className="w-8 h-8 mb-2"
+                      className="w-8 h-8 mb-2 text-gray-600"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -124,12 +122,12 @@ export default function PDFChatPage() {
                 </label>
               </div>
               {selectedFile && (
-                <div className="text-sm">
+                <div className="text-sm text-gray-600">
                   Selected: {selectedFile.name}
                 </div>
               )}
             </div>
-          </Card>
+          </div>
 
           {uploadedFileUrl && (
             <PDFViewer file={uploadedFileUrl} />
@@ -137,10 +135,10 @@ export default function PDFChatPage() {
         </div>
 
         {/* Chat Section */}
-        <Card className="p-4">
-          <h2 className="text-xl font-semibold mb-4">Chat</h2>
+        <div className="bg-white p-4 rounded-lg border border-gray-200">
+          <h2 className="text-xl font-semibold mb-4 text-black">Chat</h2>
           <div className="flex flex-col h-[600px]">
-            <ScrollArea className="flex-1 mb-4 p-4 border rounded-lg">
+            <div className="flex-1 mb-4 p-4 border rounded-lg overflow-y-auto">
               {messages.map((message: Message, index: number) => (
                 <div
                   key={index}
@@ -151,35 +149,35 @@ export default function PDFChatPage() {
                   <div
                     className={`inline-block p-3 rounded-lg ${
                       message.role === 'user'
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-muted'
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-gray-100 text-black'
                     }`}
                   >
                     {message.content}
                   </div>
                 </div>
               ))}
-            </ScrollArea>
+            </div>
             
             <div className="flex gap-2">
               <Textarea
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
                 placeholder="Type your message..."
-                className="flex-1"
+                className="flex-1 bg-white text-black border-gray-200"
                 rows={3}
                 disabled={!activeConversation}
               />
               <Button
                 onClick={handleSendMessage}
-                className="self-end"
+                className="self-end bg-blue-500 text-white hover:bg-blue-600"
                 disabled={!activeConversation || !inputMessage.trim()}
               >
                 Send
               </Button>
             </div>
           </div>
-        </Card>
+        </div>
       </div>
     </div>
   );
