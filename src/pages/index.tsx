@@ -16,7 +16,11 @@ import {
   setActiveConversation,
   setMessages,
 } from '@/redux/slices/tables';
-import type { Message } from '@/services/chat.service';
+
+interface Message {
+  role: 'user' | 'assistant';
+  content: string;
+}
 
 export default function PDFChatPage() {
   const dispatch = useDispatch();
