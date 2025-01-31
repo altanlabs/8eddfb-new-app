@@ -1,18 +1,5 @@
-import { combineReducers } from 'redux';
-import storage from 'redux-persist/lib/storage';
-
-import tablesReducer from './slices/tables.ts';
-
-
-// ----------------------------------------------------------------------
-
-export const rootPersistConfig = {
-  key: 'root',
-  storage,
-  keyPrefix: 'redux-',
-  whitelist: [],
-};
-
+import { combineReducers } from '@reduxjs/toolkit';
+import tablesReducer from './slices/tables';
 
 const rootReducer = combineReducers({
   tables: tablesReducer,

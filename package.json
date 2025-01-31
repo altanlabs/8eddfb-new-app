@@ -43,6 +43,7 @@
     "@react-pdf/renderer": "^4.1.6",
     "@reduxjs/toolkit": "^2.5.1",
     "@types/recharts": "^1.8.29",
+    "@types/redux-persist": "^4.3.1",
     "axios": "^1.7.9",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

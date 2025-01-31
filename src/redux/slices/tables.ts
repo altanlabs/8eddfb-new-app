@@ -1,5 +1,6 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import type { RootState } from '../store';
+import axios from '@/utils/axios';
 
 // Table IDs from the database
 const DOCUMENTS_TABLE_ID = '28dcc0ef-1743-4937-b518-3ebc1ec11ed5';
@@ -15,6 +16,10 @@ interface TablesState {
   messages: any[];
   loading: boolean;
   error: string | null;
+  tableRecords: Record<string, any[]>;
+  tableSchema: Record<string, any>;
+  isLoading: boolean;
+  schemaLoading: boolean;
 }
 
 const initialState: TablesState = {
@@ -25,7 +30,60 @@ const initialState: TablesState = {
   messages: [],
   loading: false,
   error: null,
+  tableRecords: {},
+  tableSchema: {},
+  isLoading: false,
+  schemaLoading: false,
 };
+
+// Async thunks
+export const initializeTables = createAsyncThunk(
+  'tables/initialize',
+  async () => {
+    const response = await axios.get('/tables');
+    return response.data;
+  }
+);
+
+export const fetchTableRecords = createAsyncThunk(
+  'tables/fetchRecords',
+  async ({ tableName, queryParams }: { tableName: string; queryParams: any }) => {
+    const response = await axios.get(`/tables/${tableName}`, { params: queryParams });
+    return { tableName, records: response.data };
+  }
+);
+
+export const fetchTableSchema = createAsyncThunk(
+  'tables/fetchSchema',
+  async ({ tableName }: { tableName: string }) => {
+    const response = await axios.get(`/tables/${tableName}/schema`);
+    return { tableName, schema: response.data };
+  }
+);
+
+export const createRecord = createAsyncThunk(
+  'tables/createRecord',
+  async ({ tableName, record }: { tableName: string; record: any }) => {
+    const response = await axios.post(`/tables/${tableName}`, record);
+    return { tableName, record: response.data };
+  }
+);
+
+export const updateRecord = createAsyncThunk(
+  'tables/updateRecord',
+  async ({ tableName, recordId, updates }: { tableName: string; recordId: string; updates: any }) => {
+    const response = await axios.patch(`/tables/${tableName}/${recordId}`, updates);
+    return { tableName, record: response.data };
+  }
+);
+
+export const deleteRecord = createAsyncThunk(
+  'tables/deleteRecord',
+  async ({ tableName, recordId }: { tableName: string; recordId: string }) => {
+    await axios.delete(`/tables/${tableName}/${recordId}`);
+    return { tableName, recordId };
+  }
+);
 
 export const tablesSlice = createSlice({
   name: 'tables',
@@ -53,6 +111,32 @@ export const tablesSlice = createSlice({
       state.error = action.payload;
     },
   },
+  extraReducers: (builder) => {
+    builder
+      .addCase(initializeTables.pending, (state) => {
+        state.isLoading = true;
+      })
+      .addCase(initializeTables.fulfilled, (state) => {
+        state.isLoading = false;
+      })
+      .addCase(initializeTables.rejected, (state) => {
+        state.isLoading = false;
+      })
+      .addCase(fetchTableRecords.pending, (state) => {
+        state.isLoading = true;
+      })
+      .addCase(fetchTableRecords.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.tableRecords[action.payload.tableName] = action.payload.records;
+      })
+      .addCase(fetchTableSchema.pending, (state) => {
+        state.schemaLoading = true;
+      })
+      .addCase(fetchTableSchema.fulfilled, (state, action) => {
+        state.schemaLoading = false;
+        state.tableSchema[action.payload.tableName] = action.payload.schema;
+      });
+  },
 });
 
 export const {
@@ -73,6 +157,10 @@ export const selectConversations = (state: RootState) => state.tables.conversati
 export const selectMessages = (state: RootState) => state.tables.messages;
 export const selectLoading = (state: RootState) => state.tables.loading;
 export const selectError = (state: RootState) => state.tables.error;
+export const selectIsLoading = (state: RootState) => state.tables.isLoading;
+export const selectSchemaLoading = (state: RootState) => state.tables.schemaLoading;
+export const selectTableRecords = (state: RootState, tableName: string) => state.tables.tableRecords[tableName];
+export const selectTableSchema = (state: RootState, tableName: string) => state.tables.tableSchema[tableName];
 
 // Export table IDs
 export const tableIds = {
